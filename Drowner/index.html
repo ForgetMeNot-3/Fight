@@ -1,1 +1,411 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <style>
+      /* 添加移动端适配 */
+      @media (max-width: 768px) {
+        .enemy-panel {
+          top: 5%;
+        }
 
+        .enemy-panel img {
+          height: 200px !important;
+        }
+
+        .action-box {
+          width: 90%;
+          padding: 10px;
+          gap: 10px;
+          flex-wrap: wrap;
+          bottom: 20px;
+        }
+
+        .action-btn {
+          padding: 4px 8px !important;
+          font-size: 0.7rem;
+          flex: 1 1 35%;
+          min-width: 80px;
+        }
+
+        .character-hand {
+          right: -120px;
+          width: 100px;
+        }
+
+        h2 {
+          font-size: 1.2rem;
+          font-family: "华文篆书", "LiSu", "KaiTi", sans-serif;
+        }
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        background: #000;
+        font-family: "华文篆书", "LiSu", "KaiTi", sans-serif;
+        color: #e0e0e0;
+        overflow: hidden;
+      }
+
+      /* 敌方区域 */
+      .enemy-panel {
+        position: absolute;
+        top: 10%;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+      }
+
+      /* 行动选择框 */
+      .action-box {
+        position: fixed;
+        bottom: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        border: 3px solid #00ffcc;
+        border-radius: 15px;
+        width: 80%;
+        max-width: 600px;
+        display: flex;
+        gap: 20px;
+      }
+
+      /* 复用序章中的脉冲动画 */
+      @keyframes pulse {
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* 新增全局动画效果（放在原有脉冲动画下方）*/
+      @keyframes border-glow {
+        0% {
+          opacity: 0.3;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.3;
+        }
+      }
+
+      @keyframes lightning {
+        0% {
+          clip-path: polygon(0 0, 0 0, 0 0);
+          opacity: 0;
+        }
+        50% {
+          clip-path: polygon(
+            48% 10%,
+            52% 15%,
+            45% 30%,
+            55% 40%,
+            43% 50%,
+            57% 60%,
+            40% 70%,
+            60% 80%,
+            35% 90%,
+            65% 95%
+          );
+          opacity: 1;
+        }
+        100% {
+          clip-path: polygon(-20% -20%, 120% -20%, 120% 120%, -20% 120%);
+          opacity: 0;
+        }
+      }
+
+      .action-btn:hover::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          45deg,
+          transparent 49%,
+          #00ffff 50%,
+          transparent 51%
+        );
+        filter: drop-shadow(0 0 10px #00ffff);
+        transform: scale(1.5);
+        transition: all 0.5s ease-out;
+        animation: lightning 0.3s linear;
+        mix-blend-mode: overlay;
+        z-index: 1;
+      }
+
+      .action-btn::after {
+        content: "";
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid #00ff99;
+        border-radius: 8px;
+        animation: border-glow 1.5s infinite;
+        opacity: 0.7;
+      }
+
+      /*统一悬停效果*/
+      .action-btn:hover {
+        /*transform: translateY(-2px);*/
+        box-shadow: 0 0 15px #00ffcc;
+        background: linear-gradient(45deg, #0b1313, #e6f1f1);
+        filter: brightness(1.2);
+      }
+
+      .action-btn {
+        background: linear-gradient(45deg, #d5d2ed, #3f2acb);
+        color: white;
+        border: 1px solid #00ffcc;
+        padding: 15px 30px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 120px;
+        box-shadow: 0 0 8px #00ffcc;
+        font-family: "华文篆书", "LiSu", "KaiTi", sans-serif;
+        letter-spacing: 1px;
+        position: relative;
+        transform: skew(-15deg);
+        border-radius: 4px;
+      }
+
+      /* 添加文字反向倾斜*/
+      .action-btn span {
+        display: block;
+        transform: skew(15deg);
+      }
+
+      /* 手部图像 */
+      .character-hand {
+        position: absolute;
+        right: -200px;
+        bottom: 0;
+        width: 180px;
+        height: auto;
+      }
+
+      /* 新增对话框样式 */
+      .dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+      }
+
+      .dialog-box {
+        background: rgba(0, 0, 0, 0.9);
+        padding: 30px 50px;
+        border: 3px solid #8b0000;
+        border-radius: 15px;
+        max-width: 80%;
+        box-shadow: 0 0 30px #ff0000;
+      }
+
+      .dialog-text {
+        color: #ff0000;
+        font-size: 2rem;
+        font-family: "华文隶书", sans-serif;
+        text-shadow: 0 0 10px #8b0000;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- 敌方信息 -->
+    <div class="enemy-panel">
+      <img
+        src="https://s1.imagehub.cc/images/2025/04/02/920a6c6c41da94990750ce944f970798.png"
+        alt="敌方灵体"
+        style="height: 300px"
+      />
+
+      <div class="enemy-status">
+        <div class="health-container" style="width: 100%">
+          <div class="health-bar" style="height: 20px; background: #333">
+            <div
+              class="health-progress"
+              style="width: 100%; height: 100%; background: #8b0000"
+            ></div>
+          </div>
+        </div>
+        <h2>镜中恶灵</h2>
+      </div>
+    </div>
+
+    <!-- 玩家行动区域 -->
+    <div class="action-box">
+      <button class="action-btn" onclick="attack()">普通攻击</button>
+      <button class="action-btn" onclick="useSkill('san值冲击')">
+        精神抵抗
+      </button>
+      <button class="action-btn" onclick="useSkill('镜面封印')">
+        镜面封印
+      </button>
+
+      <!-- 角色图像 -->
+      <img
+        src="https://s21.ax1x.com/2025/03/18/pEdbDU0.jpg"
+        class="character-hand"
+      />
+    </div>
+
+    <div class="dialog-overlay">
+      <div class="dialog-box">
+        <p class="dialog-text"></p>
+      </div>
+    </div>
+
+    <script>
+      let currentHealth = 100;
+      // 新增游戏控制逻辑
+      let isPlayerTurn = false;
+
+      const bossDialogs = [
+        "镜面在渴求你的鲜血...",
+        "破碎的倒影即是你的宿命...",
+        "沉入永恒的镜渊吧...",
+        "与我...合为一体...",
+      ];
+
+      const phases = [
+        "https://s1.imagehub.cc/images/2025/04/02/920a6c6c41da94990750ce944f970798.png", // 初始
+        "https://s1.imagehub.cc/images/2025/04/02/6a771d319f9f9eb827b600ccb00f48c4.png", // 75%
+        "https://s1.imagehub.cc/images/2025/04/02/aa06228361c2e49307eb1c45707058b9.png", // 50%
+        "https://s1.imagehub.cc/images/2025/04/02/512b3576a673a29847a7960410c74642.png", // 25%
+      ];
+
+      // 初始化血条宽度
+      function initHealthBar() {
+        const img = document.querySelector(".enemy-panel img");
+        const container = document.querySelector(".health-container");
+        container.style.width = `${img.clientWidth}px`;
+      }
+
+      // 更新血量和图片
+      function updateHealth(damage) {
+        currentHealth = Math.max(0, currentHealth - damage);
+        const progress = document.querySelector(".health-progress");
+        progress.style.width = `${currentHealth}%`;
+
+        // 更换阶段图片
+        const phaseIndex = Math.floor((100 - currentHealth) / 25);
+        if (phaseIndex > 0 && phaseIndex < phases.length) {
+          document.querySelector(".enemy-panel img").src = phases[phaseIndex];
+        }
+      }
+
+      // 绑定攻击事件
+      function attack() {
+        updateHealth(15);
+      } // 普通攻击
+
+      function useSkill(skill) {
+        if (skill === "san值冲击") updateHealth(25);
+        if (skill === "镜面封印") updateHealth(40);
+      }
+
+      // 回合开始逻辑
+      function startRound(round) {
+        isPlayerTurn = false;
+        const dialog = document.querySelector(".dialog-overlay");
+        const dialogText = document.querySelector(".dialog-text");
+
+        dialog.style.display = "flex";
+        typeWriter(bossDialogs[round % 4], dialogText);
+
+        setTimeout(() => {
+          dialog.style.display = "none";
+          generateRandomButtons();
+        }, (bossDialogs[round % 4].length + 2) * 100);
+      }
+
+      // 生成随机技能按钮
+      function generateRandomButtons() {
+        const actions = document.querySelector(".action-box");
+        actions.innerHTML = "";
+
+        const skills = [
+          "记忆撕裂",
+          "精神共振",
+          "认知崩解",
+          "镜像折射",
+          "意识湮灭",
+        ];
+        const randomSkills = [
+          ...new Set(skills.sort(() => 0.5 - Math.random()).slice(0, 3)),
+        ];
+
+        randomSkills.forEach((skill) => {
+          const btn = document.createElement("button");
+          btn.className = "action-btn";
+          btn.innerHTML = `<span>${skill}</span>`;
+          btn.onclick = () => playerAction(skill);
+          actions.appendChild(btn);
+        });
+      }
+
+      // 玩家行动后
+      function playerAction(skill) {
+        if (!isPlayerTurn) return;
+        isPlayerTurn = false;
+
+        // 根据技能造成伤害
+        const damages = {
+          记忆撕裂: 25,
+          精神共振: 15,
+          认知崩解: 35,
+          镜像折射: 0,
+        };
+        updateHealth(damages[skill] || 20);
+
+        // 敌方行动
+        setTimeout(() => {
+          updateHealth(10); // 示例：敌方固定造成10伤害
+          startRound(currentRound++);
+        }, 1000);
+      }
+
+      // 初始化游戏
+      let currentRound = 0;
+      startRound(currentRound);
+
+      // 打字机效果函数
+      function typeWriter(text, element) {
+        let i = 0;
+        element.innerHTML = "";
+        const timer = setInterval(() => {
+          element.innerHTML += text.charAt(i);
+          if (++i === text.length) {
+            clearInterval(timer);
+            isPlayerTurn = true;
+          }
+        }, 100);
+      }
+
+      // 图片加载后初始化
+      document.querySelector(".enemy-panel img").onload = initHealthBar;
+    </script>
+  </body>
+</html>
