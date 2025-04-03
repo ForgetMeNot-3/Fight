@@ -40,6 +40,29 @@
           font-size: 1.2rem;
           font-family: "华文篆书", "LiSu", "KaiTi", sans-serif;
         }
+
+        /* 在原有移动端样式基础上添加 */
+        .dialog-box {
+          padding: 15px 20px;
+          border-width: 2px;
+          max-width: 90%;
+        }
+
+        .dialog-text {
+          font-size: 1.2rem;
+          white-space: normal; /* 允许换行 */
+          line-height: 1.5;
+        }
+
+        /* 调整对话框动画速度 */
+        .dialog-text {
+          animation-duration: 0.2s;
+        }
+
+        /* 增加按钮间距 */
+        .action-box {
+          gap: 8px;
+        }
       }
       body {
         margin: 0;
